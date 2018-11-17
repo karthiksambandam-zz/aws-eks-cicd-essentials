@@ -149,7 +149,7 @@ kubectl get nodes
 
 #### Deploy a sample docker application manually:
 ```
-kubectl apply -f ./kube-manifests/deploy-first.yml
+kubectl apply -f ./aws-eks-cicd-essentials/kube-manifests/deploy-first.yml
 kubectl get svc codesuite-demo -o wide
 ```
 
@@ -170,14 +170,14 @@ git config --global credential.UseHttpPath true
 git clone https://git-codecommit.us-west-2.amazonaws.com/v1/repos/eks-cicd-demo-repo
 cp aws-eks-cicd-essentials/sample-app/* eks-cicd-demo-repo/
 cd eks-cicd-demo-repo
-git add . && git commit -m "test CodeSuite" && git push origin master
+git add . && git commit -m "test sample app" && git push origin master
 ```
 
 #### Create pipeline with Build project before proceeding with this step.
 
-# Add ACCOUNT_ID, IMAGE_REPO_NAME for CodeBuild project
+#### Add ACCOUNT_ID, IMAGE_REPO_NAME for CodeBuild project
 
-# Use CodeBuild, CodePipeline,S3 created as part of setup.
+#### Use CodeBuild, CodePipeline,S3 created as part of setup.
 
 
 #### Setup Lambda for deployment:
