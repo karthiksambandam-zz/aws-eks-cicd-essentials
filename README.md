@@ -19,6 +19,13 @@ The Cloud9 IDE needs to use the assigned IAM Instance profile. Open the "AWS Clo
 
 ![](./images/cloud9-disable-temp-credentials.png)
 
+### Clone repo
+Rest of the instruction within AWS Cloud9 environment.
+Clone this repo to continue with lab:
+
+```bash
+git clone https://github.com/karthiksambandam/aws-eks-cicd-essentials
+```
 
 ### Clean up
 
