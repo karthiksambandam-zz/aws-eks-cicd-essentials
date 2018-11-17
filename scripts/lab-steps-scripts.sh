@@ -8,7 +8,6 @@ sudo -H pip install -U awscli
 # Install bash-completion
 sudo yum install bash-completion -y
 
-
 # Install kubectl
 curl -o kubectl https://amazon-eks.s3-us-west-2.amazonaws.com/1.10.3/2018-06-05/bin/linux/amd64/kubectl
 chmod +x kubectl && sudo mv kubectl /usr/local/bin/
@@ -17,7 +16,6 @@ echo "source <(kubectl completion bash)" >> ~/.bashrc
 # Install Heptio Authenticator
 curl -o aws-iam-authenticator https://amazon-eks.s3-us-west-2.amazonaws.com/1.10.3/2018-06-05/bin/linux/amd64/heptio-authenticator-aws
 chmod +x ./aws-iam-authenticator && sudo mv aws-iam-authenticator /usr/local/bin/
-
 
 # Configure AWS CLI
 availability_zone=$(curl http://169.254.169.254/latest/meta-data/placement/availability-zone)
@@ -45,7 +43,6 @@ echo "AWS_AVAILABILITY_ZONES=$AWS_AVAILABILITY_ZONES" >> ~/.bashrc
 echo "AWS_STACK_NAME=$AWS_STACK_NAME" >> ~/.bashrc
 echo "AWS_MASTER_STACK=$AWS_MASTER_STACK" >> ~/.bashrc
 
-
 # Persist EKS variables
 echo "EKS_VPC_ID=$EKS_VPC_ID" >> ~/.bashrc
 echo "EKS_SUBNET_IDS=$EKS_SUBNET_IDS" >> ~/.bashrc
@@ -68,30 +65,26 @@ aws ec2 create-key-pair --key-name ${AWS_STACK_NAME} --query 'KeyMaterial' --out
 chmod 0400 $HOME/.ssh/k8s-workshop.pem
 
 # Create kubernetes cluster
-
 aws eks create-cluster \
   --name k8s-workshop \
   --role-arn $EKS_SERVICE_ROLE \
   --resources-vpc-config subnetIds=${EKS_SUBNET_IDS},securityGroupIds=${EKS_SECURITY_GROUPS} \
   --kubernetes-version 1.10
   
- # Describe cluster to check the status
+# Describe cluster to check the status
+aws eks describe-cluster --name k8s-workshop --query cluster.status --output text
  
- aws eks describe-cluster --name k8s-workshop --query cluster.status --output text
- 
- # Create kube config file and run it.
+# Create kube config file and run it.
 aws s3 cp s3://aws-kubernetes-artifacts/v0.5/create-kubeconfig.sh . 
 chmod +x create-kubeconfig.sh 
 
-#Run kub config
+#Run kube config
 . ./create-kubeconfig.sh
 
 # Test  kubectl configuration using 'kubectl get service'
-
 kubectl get service
 
 # To launch your worker nodes, run the following CloudFormation CLI command:*
-
 aws cloudformation create-stack \
   --stack-name k8s-workshop-worker-nodes \
   --template-url https://amazon-eks.s3-us-west-2.amazonaws.com/1.10.3/2018-06-05/amazon-eks-nodegroup.yaml \
@@ -105,33 +98,24 @@ aws cloudformation create-stack \
                  {\"ParameterKey\": \"Subnets\", \"ParameterValue\": \"${EKS_SUBNET_IDS}\"}]" --region us-west-2
                  
 # To enable worker nodes to join your cluster, download and run the aws-auth-cm.sh script.
-
 aws s3 cp s3://aws-kubernetes-artifacts/v0.5/aws-auth-cm.sh . && chmod +x aws-auth-cm.sh
 . ./aws-auth-cm.sh
 
 # Watch the status of your nodes and wait for them to reach the Ready status.*
-
 kubectl get nodes
 
 # Deploy a sample docker application manually:
-
-kubectl apply -f ./kube-manifests/deploy-first.yml
+kubectl apply -f ./aws-eks-cicd-essentials/kube-manifests/deploy-first.yml
 kubectl get svc codesuite-demo -o wide
 
-# Create a S3 bucket to store CICD Artifacts
-
-aws s3api create-bucket --bucket eks-cicd-demo-artifact --region us-west-2 --create-bucket-configuration LocationConstraint=us-west-2
 
 # Create Code Repository for sample EKS project: eks-cicd-demo-repo
-
 aws codecommit create-repository --repository-name eks-cicd-demo-repo --repository-description "EKS CICD demonstration repository" --region us-west-2
 
 # Create Container repository for docker image: eks-cicd-demo-repo
-
 aws ecr create-repository --repository-name eks-cicd-demo-repo --region us-west-2
 
 # Connect to CodeCommit Repo and push the sample project: Note you need Git credentials to complete this.
-
 git config --global credential.helper '!aws codecommit credential-helper $@'
 git config --global credential.UseHttpPath true
 git clone https://git-codecommit.us-west-2.amazonaws.com/v1/repos/eks-cicd-demo-repo
@@ -140,32 +124,23 @@ cd eks-cicd-demo-repo
 git add . && git commit -m "test CodeSuite" && git push origin master
 
 
-# Create pipeline with Build project before proceeding with this step.
-
-# Add ACCOUNT_ID, IMAGE_REPO_NAME for CodeBuild project
-
-# Use CodeBuild, CodePipeline,S3 created as part of setup.
-
-
 # Setup Lambda for deployment
 cd ..
 git clone https://github.com/BranLiang/lambda-eks
 cd lambda-eks
-
 sed -i -e "s#\$EKS_CA#$(aws eks describe-cluster --name k8s-workshop --query cluster.certificateAuthority.data --output text)#g" ./config
 sed -i -e "s#\$EKS_CLUSTER_HOST#$(aws eks describe-cluster --name k8s-workshop --query cluster.endpoint --output text)#g" ./config
 sed -i -e "s#\$EKS_CLUSTER_NAME#k8s-workshop#g" ./config
 sed -i -e "s#\$EKS_CLUSTER_USER_NAME#lambda#g" ./config
-
 kubectl get secrets
 
 #Then run the following command replacing secret name to update your token
 sed -i -e "s#\$TOKEN#$(kubectl get secret $SECRET_NAME -o json | jq -r '.data["token"]' | base64 -d)#g" ./config
 
 #Build,Package and deploy the Lambda Kube Client Function 
-
 npm install
-zip -r lambda-package_v1.zip .
+zip -r ../lambda-package_v1.zip .
+cd ..
 export LAMBDA_SERVICE_ROLE=$(aws cloudformation describe-stacks --stack-name $AWS_MASTER_STACK | jq -r '.Stacks[0].Outputs[]|select(.OutputKey=="LambdaExecutionRoleArn")|.OutputValue')
 aws lambda create-function --function-name LambdaKubeClient --runtime nodejs8.10 --role $LAMBDA_SERVICE_ROLE --handler index.handler  --zip-file fileb://lambda-package_v1.zip --timeout 10 --memory-size 128
 
@@ -173,5 +148,4 @@ aws lambda create-function --function-name LambdaKubeClient --runtime nodejs8.10
 kubectl create clusterrolebinding default-admin --clusterrole cluster-admin --serviceaccount=default:default
 
 #Test deployment success:
-
 kubectl get deployment eks-cicd-demo-repo -o wide
