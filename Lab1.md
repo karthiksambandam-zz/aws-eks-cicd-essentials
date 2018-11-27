@@ -175,10 +175,9 @@ git add . && git commit -m "test sample app" && git push origin master
 
 #### Create pipeline with Build project before proceeding with this step.
 
-#### Add ACCOUNT_ID, IMAGE_REPO_NAME for CodeBuild project
+#### Add ACCOUNT_ID, IMAGE_REPO_NAME as Environment variables for CodeBuild project
 
 #### Use CodeBuild, CodePipeline,S3 created as part of setup.
-
 
 #### Setup Lambda for deployment:
 ```
