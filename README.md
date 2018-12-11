@@ -29,7 +29,7 @@ git clone https://github.com/karthiksambandam/aws-eks-cicd-essentials
 
 ### Clean up
 
-
+[Click here](cleanup.md)
 
 ### References:
 
